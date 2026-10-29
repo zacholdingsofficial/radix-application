@@ -560,7 +560,7 @@ export default function App() {
       className="group flex w-full md:inline-flex md:w-auto items-center justify-between md:justify-start gap-4 bg-[#ffe14a] text-[#0d0f2b] font-bold text-lg rounded-full pl-8 pr-3 py-3 md:hover:gap-6 transition-all"
     >
       Start application
-      <span className="w-12 h-12 rounded-full bg-[#0d0f2b] text-[#ffe14a] flex items-center justify-center">
+      <span className="ml-auto md:ml-0 w-12 h-12 shrink-0 rounded-full bg-[#0d0f2b] text-[#ffe14a] flex items-center justify-center">
         <ArrowRight className="w-5 h-5 transition-transform group-active:translate-x-1" />
       </span>
     </button>
