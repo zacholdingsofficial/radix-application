@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './supabase';
-import { Download, FileSpreadsheet, Lock, ArrowLeft, Trash2, Search, Loader2 } from 'lucide-react';
+import { Download, FileSpreadsheet, Lock, ArrowLeft, Trash2, Search, Loader2, RefreshCcw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -68,6 +68,7 @@ export default function Admin() {
   const [applications, setApplications] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -88,8 +89,10 @@ export default function Admin() {
 
   /* ---- data ---- */
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (isManualRefresh = false) => {
+    if (isManualRefresh) setIsRefreshing(true);
+    else setLoading(true);
+
     const { data: apps } = await supabase.from('applications').select('*').order('created_at', { ascending: false });
     if (apps) setApplications(apps);
 
@@ -99,7 +102,13 @@ export default function Admin() {
       setSiteSettings(s);
       setSavedSettings(s);
     }
-    setLoading(false);
+    
+    if (isManualRefresh) {
+      setIsRefreshing(false);
+      notify('Applications updated');
+    } else {
+      setLoading(false);
+    }
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -214,7 +223,7 @@ export default function Admin() {
   }, [applications]);
 
   /* ======================================================================= */
-  /*  LOGIN                                                                   */
+  /*  LOGIN                                                                  */
   /* ======================================================================= */
 
   if (!isAuthenticated) {
@@ -266,7 +275,7 @@ export default function Admin() {
   }
 
   /* ======================================================================= */
-  /*  CONSOLE                                                                 */
+  /*  CONSOLE                                                                */
   /* ======================================================================= */
 
   const tabBtn = (id: 'roster' | 'settings', label: string) => (
@@ -291,16 +300,16 @@ export default function Admin() {
       <style>{CSS}</style>
 
       <header className="bg-[#2330ff] text-[#f2f2ee]">
-        <div className="max-w-6xl mx-auto px-6 md:px-8 py-5 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-6 md:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-0 f-display font-extrabold text-3xl leading-none tracking-tight">
-              <img src="/logo1.png" alt="" className="h-9 w-auto object-contain translate-y-[2px]" />
+            <span className="flex items-center gap-1.5 f-display font-extrabold text-xl leading-none tracking-tight">
+              <img src="/logo1.png" alt="" className="h-6 w-auto object-contain translate-y-[1px]" />
               Radix
             </span>
-            <span className="text-sm font-medium opacity-70">Admin</span>
+            <span className="text-xs font-medium opacity-70 border-l border-[#f2f2ee]/30 pl-3">Admin</span>
           </div>
-          <Link to="/" className="flex items-center gap-2 text-sm font-semibold opacity-80 hover:opacity-100 transition-opacity">
-            <ArrowLeft className="w-4 h-4" /> Public site
+          <Link to="/" className="flex items-center gap-1 text-xs sm:text-sm font-semibold opacity-80 hover:opacity-100 transition-opacity">
+            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" /> Public site
           </Link>
         </div>
       </header>
@@ -313,7 +322,16 @@ export default function Admin() {
           </div>
 
           {activeTab === 'roster' && !selectedStudent && (
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => fetchData(true)}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 border-2 border-[#0d0f2b] rounded-full px-4 py-2 text-sm font-semibold hover:bg-[#0d0f2b] hover:text-[#f2f2ee] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Refresh applications"
+              >
+                <RefreshCcw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
               <button
                 onClick={exportBulkPDF}
                 className="flex items-center gap-2 border-2 border-[#0d0f2b] rounded-full px-4 py-2 text-sm font-semibold hover:bg-[#0d0f2b] hover:text-[#f2f2ee] transition-colors"
