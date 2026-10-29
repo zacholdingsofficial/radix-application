@@ -475,7 +475,7 @@ export default function App() {
   // Cursor light on the landing hero
   const mx = useMotionValue(-600);
   const my = useMotionValue(-600);
-  const spot = useMotionTemplate`radial-gradient(460px circle at ${mx}px ${my}px, rgba(255,255,255,0.16), transparent 70%)`;
+  const spot = useMotionTemplate`radial-gradient(460px circle at ${mx}px ${my}px, rgba(35,48,255,0.09), transparent 70%)`;
 
   const category = categoryOf(formData.selectedRole);
   const isOther = formData.selectedRole === 'Other';
@@ -769,7 +769,8 @@ export default function App() {
     </button>
   );
 
-  const startBtn = open ? (
+  const renderStart = (onLight: boolean) =>
+    open ? (
     <button
       onClick={() => {
         sfx.open();
@@ -777,10 +778,14 @@ export default function App() {
         setIdx(0);
         setView('flow');
       }}
-      className="group flex w-full md:inline-flex whitespace-nowrap shrink-0 md:w-auto items-center justify-between md:justify-start gap-4 bg-[#ffe14a] text-[#0d0f2b] font-bold text-lg rounded-full pl-8 pr-3 py-3 md:hover:gap-6 transition-all"
+      className={`group flex w-full md:inline-flex whitespace-nowrap shrink-0 md:w-auto items-center justify-between md:justify-start gap-4 ${onLight ? 'bg-[#0d0f2b] text-[#f2f2ee]' : 'bg-[#ffe14a] text-[#0d0f2b]'} font-bold text-lg rounded-full pl-8 pr-3 py-3 md:hover:gap-6 transition-all`}
     >
       Start application
-      <span className="ml-auto md:ml-0 w-12 h-12 shrink-0 rounded-full bg-[#0d0f2b] text-[#ffe14a] flex items-center justify-center">
+      <span
+        className={`ml-auto md:ml-0 w-12 h-12 shrink-0 rounded-full flex items-center justify-center ${
+          onLight ? 'bg-[#ffe14a] text-[#0d0f2b]' : 'bg-[#0d0f2b] text-[#ffe14a]'
+        }`}
+      >
         <ArrowRight className="w-5 h-5 transition-transform group-active:translate-x-1" />
       </span>
     </button>
@@ -790,6 +795,9 @@ export default function App() {
     </div>
   );
 
+  const startBtn = renderStart(false);
+  const startBtnLight = renderStart(true);
+
   const q = questions[idx];
 
   return (
@@ -798,7 +806,7 @@ export default function App() {
 
       {/* ============================ LANDING ============================ */}
       <section
-        className="relative min-h-[100dvh] md:h-[100dvh] md:min-h-[640px] bg-[#2330ff] text-[#f2f2ee] flex flex-col overflow-hidden"
+        className="relative min-h-[100dvh] md:h-[100dvh] md:min-h-[640px] bg-white text-[#0d0f2b] flex flex-col overflow-hidden"
         onMouseMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           mx.set(e.clientX - r.left);
@@ -811,7 +819,7 @@ export default function App() {
           <span className="f-display font-extrabold text-3xl tracking-tight">Radix</span>
           <div className="flex items-center gap-6">
             <span className="hidden sm:flex items-center gap-2 text-sm font-medium">
-              <span className={`w-2.5 h-2.5 rounded-full ${open ? 'bg-[#ffe14a]' : 'bg-[#f2f2ee]/40'}`} />
+              <span className={`w-2.5 h-2.5 rounded-full ${open ? 'bg-[#2330ff]' : 'bg-[#0d0f2b]/30'}`} />
               {open ? 'Applications open' : 'Applications paused'}
             </span>
             {soundBtn}
@@ -831,8 +839,8 @@ export default function App() {
                   aria-hidden
                   className={`f-display font-extrabold leading-[0.92] tracking-tight text-[clamp(2rem,min(8.5vw,16vh),12rem)] transition-all duration-700 ease-out ${
                     active
-                      ? 'text-[#ffe14a] [-webkit-text-stroke:2px_#ffe14a] md:translate-x-8'
-                      : 'text-transparent [-webkit-text-stroke:2px_#f2f2ee]'
+                      ? 'text-[#ffe14a] [-webkit-text-stroke:2px_#0d0f2b] md:translate-x-8'
+                      : 'text-transparent [-webkit-text-stroke:2px_#0d0f2b]'
                   }`}
                 >
                   {w}
@@ -842,10 +850,10 @@ export default function App() {
           </div>
 
           <div className="mt-8 md:mt-10 flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-10">
-            <p className="max-w-xl text-base md:text-lg leading-relaxed text-[#f2f2ee]/85">
+            <p className="max-w-xl text-base md:text-lg leading-relaxed text-[#0d0f2b]/75">
               {siteConfig.landing_text}
             </p>
-            <div>{startBtn}</div>
+            <div>{startBtnLight}</div>
           </div>
         </div>
 
