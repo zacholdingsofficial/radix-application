@@ -73,7 +73,10 @@ export default function Admin() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [siteSettings, setSiteSettings] = useState({ is_active: true, landing_text: '' });
+  const [savedSettings, setSavedSettings] = useState({ is_active: true, landing_text: '' });
   const [savingSettings, setSavingSettings] = useState(false);
+  const settingsChanged =
+    siteSettings.is_active !== savedSettings.is_active || siteSettings.landing_text !== savedSettings.landing_text;
 
   const [toast, setToast] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,7 +94,11 @@ export default function Admin() {
     if (apps) setApplications(apps);
 
     const { data: settings } = await supabase.from('site_content').select('*').eq('id', 1).single();
-    if (settings) setSiteSettings({ is_active: settings.is_active, landing_text: settings.landing_text });
+    if (settings) {
+      const s = { is_active: settings.is_active, landing_text: settings.landing_text };
+      setSiteSettings(s);
+      setSavedSettings(s);
+    }
     setLoading(false);
   };
 
@@ -109,6 +116,7 @@ export default function Admin() {
   const saveSettings = async () => {
     setSavingSettings(true);
     const { error } = await supabase.from('site_content').update(siteSettings).eq('id', 1);
+    if (!error) setSavedSettings(siteSettings);
     notify(error ? "Couldn't save your changes. Try again." : 'Saved. Your changes are live.');
     setSavingSettings(false);
   };
@@ -284,8 +292,11 @@ export default function Admin() {
 
       <header className="bg-[#2330ff] text-[#f2f2ee]">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-5 flex items-center justify-between">
-          <div className="flex items-baseline gap-3">
-            <span className="f-display font-extrabold text-2xl tracking-tight">Radix</span>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-0 f-display font-extrabold text-3xl leading-none tracking-tight">
+              <img src="/logo1.png" alt="" className="h-9 w-auto object-contain translate-y-[2px]" />
+              Radix
+            </span>
             <span className="text-sm font-medium opacity-70">Admin</span>
           </div>
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold opacity-80 hover:opacity-100 transition-opacity">
@@ -328,14 +339,14 @@ export default function Admin() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
-              className="max-w-3xl space-y-10"
+              className="w-full space-y-10"
             >
               <h1 className="f-display font-extrabold text-3xl tracking-tight">Site settings</h1>
 
               <div className="flex items-center justify-between gap-6 border-t-2 border-b-2 border-[#0d0f2b] py-6">
                 <div>
                   <h2 className="f-display font-bold text-lg">Accepting applications</h2>
-                  <p className="text-sm opacity-60 mt-1 max-w-md">
+                  <p className="text-sm opacity-60 mt-1 max-w-2xl">
                     When this is off, the Start application button is replaced with a paused message.
                   </p>
                 </div>
@@ -378,15 +389,15 @@ export default function Admin() {
                   id="intro"
                   value={siteSettings.landing_text}
                   onChange={(e) => setSiteSettings((p) => ({ ...p, landing_text: e.target.value }))}
-                  rows={6}
+                  rows={8}
                   className="mt-4 w-full bg-white/60 border-2 border-[#0d0f2b]/15 focus:border-[#2330ff] rounded-2xl p-4 text-base leading-relaxed outline-none resize-none transition-colors"
                 />
               </div>
 
               <button
                 onClick={saveSettings}
-                disabled={savingSettings}
-                className="inline-flex items-center gap-3 bg-[#2330ff] text-[#f2f2ee] font-bold text-sm rounded-full px-8 py-4 hover:bg-[#0d0f2b] transition-colors disabled:opacity-50"
+                disabled={savingSettings || !settingsChanged}
+                className="inline-flex items-center gap-3 bg-[#2330ff] text-[#f2f2ee] font-bold text-sm rounded-full px-8 py-4 hover:bg-[#0d0f2b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#2330ff]"
               >
                 {savingSettings ? 'Saving...' : 'Save and publish'}
                 {savingSettings && <Loader2 className="w-4 h-4 animate-spin" />}

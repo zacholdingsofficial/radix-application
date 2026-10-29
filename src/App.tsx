@@ -819,8 +819,8 @@ export default function App() {
         <motion.div className="absolute inset-0 pointer-events-none" style={{ background: spot }} />
 
         <header className="relative z-10 flex items-center justify-between px-6 md:px-12 py-5">
-          <span className="flex items-center gap-1 f-display font-extrabold text-3xl leading-none tracking-tight">
-            <img src="/logo.png" alt="" className="h-9 w-auto object-contain translate-y-[3px]" />
+          <span className="flex items-center gap-0 f-display font-extrabold text-3xl leading-none tracking-tight">
+            <img src="/logo.png" alt="" className="h-9 w-auto object-contain translate-y-[2px]" />
             Radix
           </span>
           <div className="flex items-center gap-6">
@@ -835,7 +835,7 @@ export default function App() {
           </div>
         </header>
 
-        <div className="relative z-10 flex-1 min-h-0 flex flex-col justify-center px-6 md:px-12 py-4">
+        <div className="relative z-10 flex-1 min-h-0 flex flex-col justify-center px-6 md:px-12 py-8 md:py-4">
           <div className="select-none" aria-label="Build. Create. Execute.">
             {WORDS.map((w, i) => {
               const active = i === wordIndex;
@@ -843,7 +843,7 @@ export default function App() {
                 <div
                   key={w}
                   aria-hidden
-                  className={`f-display font-extrabold leading-[0.92] tracking-tight text-[clamp(2rem,min(8.5vw,16vh),12rem)] transition-all duration-700 ease-out ${
+                  className={`f-display font-extrabold leading-[1.08] md:leading-[0.92] tracking-tight text-[clamp(2.5rem,12.5vw,6rem)] md:text-[clamp(2rem,min(8.5vw,16vh),12rem)] transition-all duration-700 ease-out ${
                     active
                       ? 'text-[#ffe14a] [-webkit-text-stroke:2px_#0d0f2b] md:translate-x-8'
                       : 'text-transparent [-webkit-text-stroke:2px_#0d0f2b]'
@@ -855,7 +855,7 @@ export default function App() {
             })}
           </div>
 
-          <div className="mt-8 md:mt-10 flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-10">
+          <div className="mt-12 md:mt-10 flex flex-col md:flex-row md:items-end justify-between gap-8 md:gap-10">
             <p className="max-w-xl text-base md:text-lg leading-relaxed text-[#0d0f2b]/75">
               {siteConfig.landing_text}
             </p>
@@ -946,9 +946,9 @@ export default function App() {
               <header className="flex items-center justify-between px-6 md:px-12 py-5">
                 <button
                   onClick={() => setView('landing')}
-                  className="flex items-center gap-1 f-display font-extrabold text-2xl leading-none tracking-tight"
+                  className="flex items-center gap-0 f-display font-extrabold text-2xl leading-none tracking-tight"
                 >
-                  <img src="/logo.png" alt="" className="h-8 w-auto object-contain translate-y-[2px]" />
+                  <img src="/logo.png" alt="" className="h-8 w-auto object-contain translate-y-[1px]" />
                   Radix
                 </button>
                 <div className="flex items-center gap-5">
