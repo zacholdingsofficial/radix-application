@@ -304,6 +304,33 @@ const sfx = {
   },
 };
 
+const questionsFor = (f: FormState): Q[] => {
+  const c = categoryOf(f.selectedRole);
+  return [...BASE_QUESTIONS, ...(c ? ROLE_QUESTIONS[c] : [])];
+};
+
+// Index of the first question that still needs an answer, or -1 when all is complete
+const firstIncomplete = (f: FormState): number => {
+  const list = questionsFor(f);
+  for (let i = 0; i < list.length; i++) {
+    const q = list[i];
+    if (validate(q, f[q.key])) return i;
+    if (q.key === 'selectedRole' && f.selectedRole === 'Other' && !f.otherRole.trim()) return i;
+  }
+  return -1;
+};
+
+// A comparable fingerprint of the answers, used to tell whether anything changed
+const snapshot = (f: FormState): string => {
+  const out: Record<string, unknown> = {};
+  (Object.keys(f) as (keyof FormState)[]).sort().forEach((k) => {
+    const v = f[k];
+    out[k] = Array.isArray(v) ? [...v].sort() : String(v).trim();
+  });
+  if (f.selectedRole !== 'Other') out.otherRole = '';
+  return JSON.stringify(out);
+};
+
 const slide = {
   initial: (d: number) => ({ opacity: 0, y: d * 50 }),
   animate: { opacity: 1, y: 0 },
@@ -417,6 +444,8 @@ export default function App() {
   const [dir, setDir] = useState(1);
   const [formData, setFormData] = useState<FormState>(INITIAL);
   const [existingId, setExistingId] = useState<string | null>(null);
+  const [original, setOriginal] = useState<string | null>(null);
+  const [returnToReview, setReturnToReview] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -457,6 +486,7 @@ export default function App() {
   const onReview = idx >= questions.length;
   const total = questions.length + (category ? 0 : 4) + 1;
   const progress = Math.min(1, idx / (total - 1));
+  const hasChanges = !existingId || original === null || snapshot(formData) !== original;
 
   /* ---- data ---- */
 
@@ -492,7 +522,7 @@ export default function App() {
       setExistingId(data.id);
       const rawRole: string = data.selected_role || '';
       const savedOther = rawRole.startsWith('Other: ');
-      setFormData({
+      const loaded: FormState = {
         email: data.email || '',
         fullName: data.full_name || '',
         classYear: data.class_year || '',
@@ -516,10 +546,13 @@ export default function App() {
         techTools: data.tech_tools || '',
         techReference: data.tech_reference || '',
         techRemarks: data.tech_remarks || '',
-      });
+      };
+      setFormData(loaded);
+      setOriginal(snapshot(loaded));
       setNotice('Welcome back. We loaded your earlier answers, so you can edit and send them again.');
     } else {
       setExistingId(null);
+      setOriginal(null);
       setNotice('');
     }
   };
@@ -534,6 +567,18 @@ export default function App() {
     setIdx(to);
   };
 
+  // After editing one answer from the review screen: go straight back to review,
+  // unless the edit opened questions that still need answers (a changed role).
+  const afterEdit = (f: FormState) => {
+    const t = firstIncomplete(f);
+    if (t === -1) {
+      setReturnToReview(false);
+      go(questionsFor(f).length, 1);
+    } else {
+      go(t, 1);
+    }
+  };
+
   const advance = async () => {
     if (busy || submitting || onReview) return;
     const q = questions[idx];
@@ -544,6 +589,10 @@ export default function App() {
     if (err) {
       sfx.error();
       setError(err);
+      return;
+    }
+    if (returnToReview) {
+      afterEdit(formData);
       return;
     }
     if (q.key === 'email') {
@@ -564,7 +613,12 @@ export default function App() {
 
   const skip = () => {
     const cur = questions[idx];
-    update(cur.key, (cur.type === 'multi' ? [] : '') as never);
+    const emptied = { ...formData, [cur.key]: cur.type === 'multi' ? [] : '' } as FormState;
+    setFormData(emptied);
+    if (returnToReview) {
+      afterEdit(emptied);
+      return;
+    }
     go(idx + 1, 1);
   };
 
@@ -581,11 +635,16 @@ export default function App() {
     setError('');
     // "Other" opens its own input right here instead of moving on
     if (q.key === 'selectedRole' && option === 'Other') return;
+    const next = { ...formData, [q.key]: option } as FormState;
     lock.current = true;
     setTimeout(() => {
-      sfx.slide();
-      setDir(1);
-      setIdx((i) => i + 1);
+      if (returnToReview) {
+        afterEdit(next);
+      } else {
+        sfx.slide();
+        setDir(1);
+        setIdx((i) => i + 1);
+      }
       lock.current = false;
     }, 320);
   };
@@ -620,6 +679,7 @@ export default function App() {
   /* ---- submit ---- */
 
   const submitForm = async () => {
+    if (!hasChanges) return;
     setSubmitting(true);
     const payload = {
       email: formData.email,
@@ -668,6 +728,8 @@ export default function App() {
   const restart = () => {
     setFormData(INITIAL);
     setExistingId(null);
+    setOriginal(null);
+    setReturnToReview(false);
     setNotice('');
     setError('');
     setIdx(0);
@@ -711,6 +773,7 @@ export default function App() {
     <button
       onClick={() => {
         sfx.open();
+        setReturnToReview(false);
         setIdx(0);
         setView('flow');
       }}
@@ -1049,13 +1112,23 @@ export default function App() {
                           {error && <p className="mt-5 font-semibold text-[#2330ff]">{error}</p>}
 
                           <div className="mt-12 flex items-center gap-6">
-                            <button
-                              type="button"
-                              onClick={back}
-                              className="flex items-center gap-2 font-semibold opacity-60 hover:opacity-100 transition-opacity"
-                            >
-                              <ArrowLeft className="w-4 h-4" /> Back
-                            </button>
+                            {returnToReview ? (
+                              <button
+                                type="button"
+                                onClick={advance}
+                                className="flex items-center gap-2 font-semibold underline underline-offset-4 opacity-80 hover:opacity-100 transition-opacity"
+                              >
+                                <ArrowLeft className="w-4 h-4" /> Back to review
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={back}
+                                className="flex items-center gap-2 font-semibold opacity-60 hover:opacity-100 transition-opacity"
+                              >
+                                <ArrowLeft className="w-4 h-4" /> Back
+                              </button>
+                            )}
 
                             {((q.type !== 'choice' && q.type !== 'scale') || (q.key === 'selectedRole' && isOther)) && (
                               <>
@@ -1065,7 +1138,7 @@ export default function App() {
                                   disabled={busy}
                                   className="bg-[#0d0f2b] text-[#f2f2ee] rounded-full px-7 py-3 font-bold text-sm hover:bg-[#2330ff] transition-colors disabled:opacity-50"
                                 >
-                                  Continue
+                                  {returnToReview && firstIncomplete(formData) === -1 ? 'Save change' : 'Continue'}
                                 </button>
                                 <span className="hidden md:flex items-center gap-2 text-sm opacity-50">
                                   or press Enter <CornerDownLeft className="w-4 h-4" />
@@ -1102,7 +1175,10 @@ export default function App() {
                                 <li key={item.key}>
                                   <button
                                     type="button"
-                                    onClick={() => go(i, -1)}
+                                    onClick={() => {
+                                      setReturnToReview(true);
+                                      go(i, -1);
+                                    }}
                                     className="w-full text-left grid sm:grid-cols-[180px_1fr] gap-1 sm:gap-6 py-4 border-b border-[#0d0f2b]/15 hover:bg-[#2330ff]/5 transition-colors px-2 -mx-2"
                                   >
                                     <span className="text-sm font-medium opacity-60 pt-1">{item.short}</span>
@@ -1128,12 +1204,15 @@ export default function App() {
                             <button
                               type="button"
                               onClick={submitForm}
-                              disabled={submitting}
-                              className="inline-flex items-center gap-3 bg-[#2330ff] text-[#f2f2ee] rounded-full px-8 py-4 font-bold text-base hover:bg-[#0d0f2b] transition-colors disabled:opacity-50"
+                              disabled={submitting || !hasChanges}
+                              className="inline-flex items-center gap-3 bg-[#2330ff] text-[#f2f2ee] rounded-full px-8 py-4 font-bold text-base hover:bg-[#0d0f2b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#2330ff]"
                             >
                               {submitting ? 'Sending...' : existingId ? 'Update my application' : 'Send my application'}
                               {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
                             </button>
+                            {existingId && !hasChanges && (
+                              <span className="text-sm opacity-60">Update turns on once you change an answer.</span>
+                            )}
                           </div>
                         </div>
                       )}
