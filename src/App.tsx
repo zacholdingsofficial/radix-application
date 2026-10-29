@@ -678,6 +678,23 @@ export default function App() {
         </div>
       </section>
 
+      <footer className="bg-[#0d0f2b] text-[#f2f2ee] border-t border-[#f2f2ee]/15 px-6 md:px-12 py-6">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2 text-sm">
+          <span className="opacity-70">&copy; 2026 Radix. All rights reserved.</span>
+          <span className="opacity-30" aria-hidden>|</span>
+          <a
+            href="https://wa.me/917558957246"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Message us on WhatsApp"
+            title="Message us on WhatsApp"
+            className="f-display font-extrabold text-lg leading-none text-[#ffe14a] hover:underline underline-offset-4 transition-all"
+          >
+            R.
+          </a>
+        </div>
+      </footer>
+
       {/* =============================== FLOW ============================== */}
       <AnimatePresence>
         {view === 'flow' && (
