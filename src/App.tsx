@@ -5,7 +5,7 @@ import {
   useMotionValue,
   useMotionTemplate,
 } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Lock, Loader2, Check, CornerDownLeft } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Lock, Loader2, Check, CornerDownLeft, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from './supabase';
 import { Link } from 'react-router-dom';
 
@@ -152,16 +152,6 @@ const ROLE_QUESTIONS: Record<string, Q[]> = {
   ],
 };
 
-const OTHER_QUESTION: Q = {
-  key: 'otherRole',
-  type: 'text',
-  label: 'Which role would you prefer?',
-  short: 'Preferred role',
-  hint: 'Tell us what you would like to do with the team.',
-  placeholder: 'e.g. Copywriter, Photographer, Data analyst',
-  required: true,
-};
-
 const categoryOf = (role: string): string | null => {
   if (!role) return null;
   if (['Graphic designers', 'Videography / Video Editing', 'UI / UX designers', 'Web designers'].includes(role)) return 'Creatives';
@@ -189,6 +179,129 @@ const validate = (q: Q, v: unknown): string => {
     }
   }
   return '';
+};
+
+/* -------------------------------------------------------------------------- */
+/*  Sound: tiny synthesized UI sounds, no audio files. Quiet and low on purpose */
+/* -------------------------------------------------------------------------- */
+
+let audioCtx: AudioContext | null = null;
+let noiseBuf: AudioBuffer | null = null;
+let soundEnabled = true;
+
+const ac = (): AudioContext | null => {
+  if (!soundEnabled || typeof window === 'undefined') return null;
+  try {
+    if (!audioCtx) {
+      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AC) return null;
+      audioCtx = new AC();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  } catch {
+    return null;
+  }
+};
+
+const env = (g: GainNode, t: number, peak: number, dur: number, attack = 0.006) => {
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+};
+
+const blip = (
+  c: AudioContext,
+  o: { freq: number; to?: number; dur: number; peak: number; type?: OscillatorType; delay?: number }
+) => {
+  const t = c.currentTime + (o.delay ?? 0);
+  const osc = c.createOscillator();
+  const g = c.createGain();
+  osc.type = o.type ?? 'sine';
+  osc.frequency.setValueAtTime(o.freq, t);
+  if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + o.dur);
+  env(g, t, o.peak, o.dur);
+  osc.connect(g);
+  g.connect(c.destination);
+  osc.start(t);
+  osc.stop(t + o.dur + 0.05);
+};
+
+const swish = (
+  c: AudioContext,
+  o: { from: number; to: number; dur: number; peak: number; q?: number; delay?: number }
+) => {
+  if (!noiseBuf || noiseBuf.sampleRate !== c.sampleRate) {
+    noiseBuf = c.createBuffer(1, c.sampleRate, c.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const t = c.currentTime + (o.delay ?? 0);
+  const src = c.createBufferSource();
+  src.buffer = noiseBuf;
+  const f = c.createBiquadFilter();
+  f.type = 'bandpass';
+  f.Q.value = o.q ?? 1;
+  f.frequency.setValueAtTime(o.from, t);
+  f.frequency.exponentialRampToValueAtTime(o.to, t + o.dur);
+  const g = c.createGain();
+  env(g, t, o.peak, o.dur, o.dur * 0.35);
+  src.connect(f);
+  f.connect(g);
+  g.connect(c.destination);
+  src.start(t);
+  src.stop(t + o.dur + 0.05);
+};
+
+const sfx = {
+  // a soft low tick for every character typed
+  key: () => {
+    const c = ac();
+    if (!c) return;
+    blip(c, { freq: 150 + Math.random() * 30, to: 90, dur: 0.05, peak: 0.035, type: 'triangle' });
+    swish(c, { from: 1400, to: 900, dur: 0.02, peak: 0.02, q: 0.8 });
+  },
+  // choosing an option
+  select: () => {
+    const c = ac();
+    if (!c) return;
+    blip(c, { freq: 200, to: 300, dur: 0.09, peak: 0.04 });
+  },
+  // moving to the next step: a low mechanical slide
+  slide: () => {
+    const c = ac();
+    if (!c) return;
+    swish(c, { from: 280, to: 800, dur: 0.28, peak: 0.05, q: 1.4 });
+    blip(c, { freq: 110, to: 70, dur: 0.22, peak: 0.05, type: 'triangle' });
+  },
+  // moving back: the same slide in reverse
+  back: () => {
+    const c = ac();
+    if (!c) return;
+    swish(c, { from: 800, to: 280, dur: 0.24, peak: 0.045, q: 1.4 });
+    blip(c, { freq: 70, to: 105, dur: 0.2, peak: 0.045, type: 'triangle' });
+  },
+  // opening the application
+  open: () => {
+    const c = ac();
+    if (!c) return;
+    swish(c, { from: 150, to: 1200, dur: 0.6, peak: 0.06, q: 1.1 });
+    blip(c, { freq: 70, to: 45, dur: 0.5, peak: 0.07, type: 'triangle' });
+  },
+  // something needs attention
+  error: () => {
+    const c = ac();
+    if (!c) return;
+    blip(c, { freq: 95, to: 70, dur: 0.16, peak: 0.06, type: 'triangle' });
+    blip(c, { freq: 95, to: 70, dur: 0.16, peak: 0.05, type: 'triangle', delay: 0.1 });
+  },
+  // application sent
+  success: () => {
+    const c = ac();
+    if (!c) return;
+    [196, 247, 294].forEach((f, i) => blip(c, { freq: f, dur: 0.7, peak: 0.035, delay: i * 0.09 }));
+    blip(c, { freq: 98, dur: 0.9, peak: 0.05 });
+  },
 };
 
 const slide = {
@@ -314,6 +427,22 @@ export default function App() {
 
   const lock = useRef(false);
 
+  const [sound, setSound] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('radix-sound') !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    soundEnabled = sound;
+    try {
+      localStorage.setItem('radix-sound', sound ? 'on' : 'off');
+    } catch {
+      /* storage can be blocked, sound still works for this visit */
+    }
+  }, [sound]);
+
   // Cursor light on the landing hero
   const mx = useMotionValue(-600);
   const my = useMotionValue(-600);
@@ -322,12 +451,8 @@ export default function App() {
   const category = categoryOf(formData.selectedRole);
   const isOther = formData.selectedRole === 'Other';
   const questions = useMemo<Q[]>(
-    () => [
-      ...BASE_QUESTIONS,
-      ...(isOther ? [OTHER_QUESTION] : []),
-      ...(category ? ROLE_QUESTIONS[category] : []),
-    ],
-    [category, isOther]
+    () => [...BASE_QUESTIONS, ...(category ? ROLE_QUESTIONS[category] : [])],
+    [category]
   );
   const onReview = idx >= questions.length;
   const total = questions.length + (category ? 0 : 4) + 1;
@@ -402,6 +527,8 @@ export default function App() {
   /* ---- navigation ---- */
 
   const go = (to: number, d: number) => {
+    if (d > 0) sfx.slide();
+    else sfx.back();
     setError('');
     setDir(d);
     setIdx(to);
@@ -410,8 +537,12 @@ export default function App() {
   const advance = async () => {
     if (busy || submitting || onReview) return;
     const q = questions[idx];
-    const err = validate(q, formData[q.key]);
+    let err = validate(q, formData[q.key]);
+    if (!err && q.key === 'selectedRole' && isOther && !formData.otherRole.trim()) {
+      err = 'Tell us which role you would prefer.';
+    }
     if (err) {
+      sfx.error();
       setError(err);
       return;
     }
@@ -438,6 +569,7 @@ export default function App() {
   };
 
   const pick = (q: Q, option: string) => {
+    sfx.select();
     if (q.type === 'multi') {
       const list = formData.smPlatforms;
       update('smPlatforms', list.includes(option) ? list.filter((p) => p !== option) : [...list, option]);
@@ -447,8 +579,11 @@ export default function App() {
     if (lock.current) return;
     update(q.key, option as never);
     setError('');
+    // "Other" opens its own input right here instead of moving on
+    if (q.key === 'selectedRole' && option === 'Other') return;
     lock.current = true;
     setTimeout(() => {
+      sfx.slide();
       setDir(1);
       setIdx((i) => i + 1);
       lock.current = false;
@@ -473,7 +608,10 @@ export default function App() {
       if (typing || !q || !q.options) return;
       const k = e.key.toLowerCase();
       const n = q.type === 'scale' ? parseInt(k, 10) - 1 : k.length === 1 ? k.charCodeAt(0) - 97 : -1;
-      if (n >= 0 && n < q.options.length) pick(q, q.options[n]);
+      if (n >= 0 && n < q.options.length) {
+        e.preventDefault();
+        pick(q, q.options[n]);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -517,9 +655,11 @@ export default function App() {
 
     if (!res.error) {
       setUpdated(!!existingId);
+      sfx.success();
       setView('done');
     } else {
       console.error(res.error);
+      sfx.error();
       setError("We couldn't send your application. Check your email address and try again.");
     }
     setSubmitting(false);
@@ -535,6 +675,9 @@ export default function App() {
   };
 
   const displayValue = (q: Q) => {
+    if (q.key === 'selectedRole' && formData.selectedRole === 'Other' && formData.otherRole.trim()) {
+      return `Other: ${formData.otherRole.trim()}`;
+    }
     const v = formData[q.key];
     if (Array.isArray(v)) return v.join(', ');
     return String(v ?? '').trim();
@@ -551,9 +694,23 @@ export default function App() {
   }
 
   const open = siteConfig.is_active;
+  const soundBtn = (
+    <button
+      type="button"
+      onClick={() => setSound((v) => !v)}
+      aria-label={sound ? 'Turn sounds off' : 'Turn sounds on'}
+      aria-pressed={sound}
+      title={sound ? 'Sounds on' : 'Sounds off'}
+      className="p-2 opacity-60 hover:opacity-100 transition-opacity"
+    >
+      {sound ? <Volume2 className="w-5 h-5" strokeWidth={1.75} /> : <VolumeX className="w-5 h-5" strokeWidth={1.75} />}
+    </button>
+  );
+
   const startBtn = open ? (
     <button
       onClick={() => {
+        sfx.open();
         setIdx(0);
         setView('flow');
       }}
@@ -594,6 +751,7 @@ export default function App() {
               <span className={`w-2.5 h-2.5 rounded-full ${open ? 'bg-[#ffe14a]' : 'bg-[#f2f2ee]/40'}`} />
               {open ? 'Applications open' : 'Applications paused'}
             </span>
+            {soundBtn}
             <Link to="/admin" aria-label="Admin" className="p-2 opacity-60 hover:opacity-100 transition-opacity">
               <Lock className="w-5 h-5" strokeWidth={1.75} />
             </Link>
@@ -716,6 +874,7 @@ export default function App() {
                   <span className="text-sm font-medium opacity-60">
                     {onReview ? 'Last look' : `${idx + 1} of ${total}`}
                   </span>
+                  {soundBtn}
                   <Link to="/admin" aria-label="Admin" className="p-2 opacity-40 hover:opacity-100 transition-opacity">
                     <Lock className="w-5 h-5" strokeWidth={1.75} />
                   </Link>
@@ -761,6 +920,7 @@ export default function App() {
                                   value={String(formData[q.key])}
                                   onChange={(e) => {
                                     update(q.key, e.target.value as never);
+                                    sfx.key();
                                     setError('');
                                   }}
                                   placeholder={q.placeholder}
@@ -778,6 +938,7 @@ export default function App() {
                                 value={String(formData[q.key])}
                                 onChange={(e) => {
                                   update(q.key, e.target.value as never);
+                                    sfx.key();
                                   setError('');
                                 }}
                                 placeholder={q.placeholder}
@@ -817,6 +978,41 @@ export default function App() {
                                   );
                                 })}
                               </div>
+                            )}
+
+                            {q.key === 'selectedRole' && (
+                              <AnimatePresence initial={false}>
+                                {isOther && (
+                                  <motion.div
+                                    key="other-role"
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="pt-6 max-w-xl">
+                                      <label htmlFor="other-role" className="text-sm font-medium opacity-70">
+                                        Which role would you prefer?
+                                      </label>
+                                      <input
+                                        id="other-role"
+                                        autoFocus
+                                        type="text"
+                                        value={formData.otherRole}
+                                        onChange={(e) => {
+                                          update('otherRole', e.target.value);
+                                          sfx.key();
+                                          setError('');
+                                        }}
+                                        placeholder="e.g. Copywriter, Photographer, Data analyst"
+                                        autoComplete="off"
+                                        className="f-display w-full bg-transparent border-0 border-b-2 border-[#0d0f2b]/15 focus:border-[#2330ff] outline-none py-2 font-bold text-[clamp(1.1rem,2.2vw,1.5rem)] tracking-tight placeholder:text-[#0d0f2b]/20 transition-colors"
+                                      />
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             )}
 
                             {q.type === 'scale' && q.options && (
@@ -861,7 +1057,7 @@ export default function App() {
                               <ArrowLeft className="w-4 h-4" /> Back
                             </button>
 
-                            {q.type !== 'choice' && q.type !== 'scale' && (
+                            {((q.type !== 'choice' && q.type !== 'scale') || (q.key === 'selectedRole' && isOther)) && (
                               <>
                                 <button
                                   type="button"
