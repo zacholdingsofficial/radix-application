@@ -381,7 +381,10 @@ function Ticket({ data }: { data: FormState }) {
       className="relative w-full max-w-sm lg:max-w-[320px] bg-[#ffe14a] text-[#0d0f2b] rounded-3xl p-5 lg:p-7"
     >
       <div className="flex items-baseline justify-between">
-        <span className="f-display font-extrabold text-2xl">Radix</span>
+        <span className="flex items-center gap-0 f-display font-extrabold text-2xl leading-none">
+          <img src="/logo.png" alt="" className="h-8 w-auto object-contain translate-y-[1px]" />
+          Radix
+        </span>
         <span className="text-sm font-medium opacity-70">Team call</span>
       </div>
 
