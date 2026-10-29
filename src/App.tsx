@@ -26,6 +26,9 @@ const ROLES = [
   'Other',
 ];
 
+// Roles shown in the landing page slideshow ("Other" is intentionally left out)
+const MARQUEE_ROLES = ROLES.filter((r) => r !== 'Other');
+
 const WORDS = ['Build.', 'Create.', 'Execute.'];
 
 const PERKS = [
@@ -816,7 +819,10 @@ export default function App() {
         <motion.div className="absolute inset-0 pointer-events-none" style={{ background: spot }} />
 
         <header className="relative z-10 flex items-center justify-between px-6 md:px-12 py-5">
-          <span className="f-display font-extrabold text-3xl tracking-tight">Radix</span>
+          <span className="flex items-center gap-1 f-display font-extrabold text-3xl leading-none tracking-tight">
+            <img src="/logo.png" alt="" className="h-9 w-auto object-contain translate-y-[3px]" />
+            Radix
+          </span>
           <div className="flex items-center gap-6">
             <span className="hidden sm:flex items-center gap-2 text-sm font-medium">
               <span className={`w-2.5 h-2.5 rounded-full ${open ? 'bg-[#2330ff]' : 'bg-[#0d0f2b]/30'}`} />
@@ -860,7 +866,7 @@ export default function App() {
         {/* Roles band */}
         <div className="relative z-10 bg-[#ffe14a] text-[#0d0f2b] overflow-hidden py-4">
           <div className="marquee-track flex w-max">
-            {[...ROLES, ...ROLES].map((r, i) => (
+            {[...MARQUEE_ROLES, ...MARQUEE_ROLES].map((r, i) => (
               <span key={i} className="f-display font-bold text-lg flex items-center whitespace-nowrap">
                 <span className="px-8">{r}</span>
                 <span className="w-2.5 h-2.5 rounded-full bg-[#0d0f2b]" />
@@ -938,7 +944,11 @@ export default function App() {
               </div>
 
               <header className="flex items-center justify-between px-6 md:px-12 py-5">
-                <button onClick={() => setView('landing')} className="f-display font-extrabold text-2xl tracking-tight">
+                <button
+                  onClick={() => setView('landing')}
+                  className="flex items-center gap-1 f-display font-extrabold text-2xl leading-none tracking-tight"
+                >
+                  <img src="/logo.png" alt="" className="h-8 w-auto object-contain translate-y-[2px]" />
                   Radix
                 </button>
                 <div className="flex items-center gap-5">
@@ -1009,7 +1019,7 @@ export default function App() {
                                 value={String(formData[q.key])}
                                 onChange={(e) => {
                                   update(q.key, e.target.value as never);
-                                    sfx.key();
+                                  sfx.key();
                                   setError('');
                                 }}
                                 placeholder={q.placeholder}
@@ -1218,9 +1228,6 @@ export default function App() {
                               {submitting ? 'Sending...' : existingId ? 'Update my application' : 'Send my application'}
                               {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
                             </button>
-                            {existingId && !hasChanges && (
-                              <span className="text-sm opacity-60">Update turns on once you change an answer.</span>
-                            )}
                           </div>
                         </div>
                       )}
