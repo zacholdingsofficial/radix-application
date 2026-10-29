@@ -557,7 +557,7 @@ export default function App() {
         setIdx(0);
         setView('flow');
       }}
-      className="group flex w-full md:inline-flex md:w-auto items-center justify-between md:justify-start gap-4 bg-[#ffe14a] text-[#0d0f2b] font-bold text-lg rounded-full pl-8 pr-3 py-3 md:hover:gap-6 transition-all"
+      className="group flex w-full md:inline-flex whitespace-nowrap shrink-0 md:w-auto items-center justify-between md:justify-start gap-4 bg-[#ffe14a] text-[#0d0f2b] font-bold text-lg rounded-full pl-8 pr-3 py-3 md:hover:gap-6 transition-all"
     >
       Start application
       <span className="ml-auto md:ml-0 w-12 h-12 shrink-0 rounded-full bg-[#0d0f2b] text-[#ffe14a] flex items-center justify-center">
@@ -671,7 +671,7 @@ export default function App() {
 
       <section className="bg-[#0d0f2b] text-[#f2f2ee] px-6 md:px-12 py-20">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-10">
-          <h2 className="f-display font-extrabold text-[clamp(2.25rem,5vw,4.5rem)] leading-none tracking-tight">
+          <h2 className="f-display font-extrabold text-[clamp(2rem,4vw,3.5rem)] leading-none tracking-tight">
             Ready when you are.
           </h2>
           {startBtn}
