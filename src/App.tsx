@@ -235,25 +235,25 @@ function Ticket({ data }: { data: FormState }) {
       animate={{ rotate: -2, y: 0, opacity: 1 }}
       whileHover={{ rotate: 0 }}
       transition={{ type: 'spring', stiffness: 160, damping: 16 }}
-      className="relative w-full max-w-[320px] bg-[#ffe14a] text-[#0d0f2b] rounded-3xl p-7 hidden lg:block"
+      className="relative w-full max-w-sm lg:max-w-[320px] bg-[#ffe14a] text-[#0d0f2b] rounded-3xl p-5 lg:p-7"
     >
       <div className="flex items-baseline justify-between">
         <span className="f-display font-extrabold text-2xl">Radix</span>
         <span className="text-sm font-medium opacity-70">Team call</span>
       </div>
 
-      <div className="relative my-6">
+      <div className="relative my-4 lg:my-6">
         <div className="border-t-2 border-dashed border-[#0d0f2b]/25" />
-        <span className="absolute -left-10 -top-3 w-6 h-6 rounded-full bg-[#f2f2ee]" />
-        <span className="absolute -right-10 -top-3 w-6 h-6 rounded-full bg-[#f2f2ee]" />
+        <span className="absolute -left-8 lg:-left-10 -top-3 w-6 h-6 rounded-full bg-[#f2f2ee]" />
+        <span className="absolute -right-8 lg:-right-10 -top-3 w-6 h-6 rounded-full bg-[#f2f2ee]" />
       </div>
 
       <p className="text-sm font-medium opacity-60 mb-1">Name</p>
-      <p className="f-display font-bold text-2xl leading-tight break-words min-h-[2.5rem]">
+      <p className="f-display font-bold text-xl lg:text-2xl leading-tight break-words min-h-[2rem] lg:min-h-[2.5rem]">
         {data.fullName.trim() || blank}
       </p>
 
-      <div className="mt-6 space-y-3 text-sm">
+      <div className="mt-4 lg:mt-6 space-y-2 lg:space-y-3 text-sm">
         <div className="flex justify-between gap-4">
           <span className="opacity-60">Class</span>
           <span className="font-semibold text-right">{data.classYear.trim() || blank}</span>
@@ -268,7 +268,7 @@ function Ticket({ data }: { data: FormState }) {
         </div>
       </div>
 
-      <div className="mt-7 min-h-[2.5rem]">
+      <div className="mt-5 lg:mt-7 min-h-[2.5rem]">
         <AnimatePresence mode="wait">
           {data.selectedRole ? (
             <motion.span
@@ -722,8 +722,8 @@ export default function App() {
                 </div>
               </header>
 
-              <main className="flex-1 grid lg:grid-cols-[minmax(0,1fr)_320px] gap-16 items-center px-6 md:px-12 pb-12 max-w-7xl w-full mx-auto">
-                <div className="min-h-[60vh] flex flex-col justify-center">
+              <main className="flex-1 grid lg:grid-cols-[minmax(0,1fr)_320px] gap-8 lg:gap-16 items-center px-6 md:px-12 pb-12 max-w-7xl w-full mx-auto">
+                <div className="min-h-[46vh] lg:min-h-[60vh] flex flex-col justify-center">
                   <AnimatePresence mode="wait" custom={dir}>
                     <motion.div
                       key={idx}
