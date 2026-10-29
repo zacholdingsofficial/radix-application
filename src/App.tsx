@@ -5,7 +5,7 @@ import {
   useMotionValue,
   useMotionTemplate,
 } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Lock, Loader2, Check, CornerDownLeft, Volume2, VolumeX } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Lock, Loader2, Check, CornerDownLeft } from 'lucide-react';
 import { supabase } from './supabase';
 import { Link } from 'react-router-dom';
 
@@ -190,7 +190,7 @@ const validate = (q: Q, v: unknown): string => {
 
 let audioCtx: AudioContext | null = null;
 let noiseBuf: AudioBuffer | null = null;
-let soundEnabled = true;
+const soundEnabled = true;
 
 const ac = (): AudioContext | null => {
   if (!soundEnabled || typeof window === 'undefined') return null;
@@ -462,21 +462,6 @@ export default function App() {
 
   const lock = useRef(false);
 
-  const [sound, setSound] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('radix-sound') !== 'off';
-    } catch {
-      return true;
-    }
-  });
-  useEffect(() => {
-    soundEnabled = sound;
-    try {
-      localStorage.setItem('radix-sound', sound ? 'on' : 'off');
-    } catch {
-      /* storage can be blocked, sound still works for this visit */
-    }
-  }, [sound]);
 
   // Cursor light on the landing hero
   const mx = useMotionValue(-600);
@@ -762,18 +747,6 @@ export default function App() {
   }
 
   const open = siteConfig.is_active;
-  const soundBtn = (
-    <button
-      type="button"
-      onClick={() => setSound((v) => !v)}
-      aria-label={sound ? 'Turn sounds off' : 'Turn sounds on'}
-      aria-pressed={sound}
-      title={sound ? 'Sounds on' : 'Sounds off'}
-      className="p-2 opacity-60 hover:opacity-100 transition-opacity"
-    >
-      {sound ? <Volume2 className="w-5 h-5" strokeWidth={1.75} /> : <VolumeX className="w-5 h-5" strokeWidth={1.75} />}
-    </button>
-  );
 
   const renderStart = (onLight: boolean) =>
     open ? (
@@ -831,7 +804,6 @@ export default function App() {
               <span className={`w-2.5 h-2.5 rounded-full ${open ? 'bg-[#2330ff]' : 'bg-[#0d0f2b]/30'}`} />
               {open ? 'Applications open' : 'Applications paused'}
             </span>
-            {soundBtn}
             <Link to="/admin" aria-label="Admin" className="p-2 opacity-60 hover:opacity-100 transition-opacity">
               <Lock className="w-5 h-5" strokeWidth={1.75} />
             </Link>
@@ -958,8 +930,7 @@ export default function App() {
                   <span className="text-sm font-medium opacity-60">
                     {onReview ? 'Last look' : `${idx + 1} of ${total}`}
                   </span>
-                  {soundBtn}
-                  <Link to="/admin" aria-label="Admin" className="p-2 opacity-40 hover:opacity-100 transition-opacity">
+                        <Link to="/admin" aria-label="Admin" className="p-2 opacity-40 hover:opacity-100 transition-opacity">
                     <Lock className="w-5 h-5" strokeWidth={1.75} />
                   </Link>
                 </div>
