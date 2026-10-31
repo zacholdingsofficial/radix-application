@@ -36,26 +36,29 @@ const answerRows = (s: any): Row[] => {
     const text = String(value).trim();
     if (text) rows.push([label, text]);
   };
+
+  add('Portfolio / Work', s.portfolio_url || s.cr_portfolio);
+  add('GitHub', s.github_url || s.tech_reference);
+
   add('Software', s.cr_software);
-  add('Portfolio', s.cr_portfolio);
   add('Teamwork', s.cr_teamwork);
-  add('Remarks', s.cr_remarks);
+  add('Remarks (Creatives)', s.cr_remarks);
 
   add('Built social profiles', s.sm_familiarity);
   add('Platforms', Array.isArray(s.sm_platforms) ? s.sm_platforms.join(', ') : s.sm_platforms);
   add('Strategy and analytics', s.sm_strategies);
-  add('Remarks', s.sm_remarks);
+  add('Remarks (Social)', s.sm_remarks);
 
   add('Marketing tools', s.dm_tools_scale ? `${s.dm_tools_scale} / 5` : '');
   add('Skills and tools', s.dm_skills);
   add('Analytical skills', s.dm_analytic_scale ? `${s.dm_analytic_scale} / 5` : '');
   add('Experience', s.dm_experience);
-  add('Remarks', s.dm_remarks);
+  add('Remarks (Digital Mktg)', s.dm_remarks);
 
   add('Technical skills', s.tech_skills);
   add('Tools', s.tech_tools);
-  add('Reference', s.tech_reference);
-  add('Remarks', s.tech_remarks);
+  add('Remarks (Tech)', s.tech_remarks);
+  
   return rows;
 };
 
@@ -158,10 +161,18 @@ export default function Admin() {
   const exportBulkPDF = () => {
     const doc = new jsPDF();
     autoTable(doc, {
-      head: [['Name', 'Role', 'Class', 'Phone', 'Email']],
-      body: applications.map((a) => [a.full_name, roleLabel(a), a.class_year, a.phone, a.email]),
+      head: [['Name', 'Role', 'Class', 'Phone', 'Email', 'Portfolio', 'GitHub']],
+      body: applications.map((a) => [
+        a.full_name, 
+        roleLabel(a), 
+        a.class_year, 
+        a.phone, 
+        a.email,
+        a.portfolio_url || a.cr_portfolio || '',
+        a.github_url || a.tech_reference || ''
+      ]),
       theme: 'grid',
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 }, 
     });
     doc.save('Radix_Applications_Bulk.pdf');
   };

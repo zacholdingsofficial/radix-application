@@ -10,7 +10,7 @@ import { supabase } from './supabase';
 import { Link } from 'react-router-dom';
 
 /* -------------------------------------------------------------------------- */
-/*  Palette (kept as literal Tailwind classes below so JIT can see them)       */
+/*  Palette (kept as literal Tailwind classes below so JIT can see them)      */
 /*  blue   #2330ff   chalk  #f2f2ee   ink  #0d0f2b   yellow #ffe14a            */
 /* -------------------------------------------------------------------------- */
 
@@ -43,11 +43,13 @@ const INITIAL = {
   fullName: '',
   classYear: '',
   phone: '',
+  portfolioUrl: '',
+  githubUrl: '',
   selectedRole: '',
   otherRole: '',
   crSoftware: '',
   crTeamwork: '',
-  crPortfolio: '',
+  crPortfolio: '', // Kept for backward compatibility
   crRemarks: '',
   smFamiliarity: '',
   smPlatforms: [] as string[],
@@ -60,7 +62,7 @@ const INITIAL = {
   dmRemarks: '',
   techSkills: '',
   techTools: '',
-  techReference: '',
+  techReference: '', // Kept for backward compatibility
   techRemarks: '',
 };
 
@@ -130,7 +132,6 @@ const BASE_QUESTIONS: Q[] = [
 const ROLE_QUESTIONS: Record<string, Q[]> = {
   Creatives: [
     { key: 'crSoftware', type: 'long', label: 'Which software do you work with?', short: 'Software', placeholder: 'Photoshop, Premiere, Figma...', required: true },
-    { key: 'crPortfolio', type: 'url', label: 'Show us your best work.', short: 'Portfolio', hint: 'Paste a link to your portfolio.', placeholder: 'https://', required: true },
     { key: 'crTeamwork', type: 'long', label: 'Tell us about a time you worked in a team.', short: 'Teamwork', placeholder: 'What was the project and what was your part?', required: false },
     { key: 'crRemarks', type: 'long', label: 'Anything else you want us to know?', short: 'Remarks', required: false },
   ],
@@ -150,7 +151,6 @@ const ROLE_QUESTIONS: Record<string, Q[]> = {
   Technical: [
     { key: 'techSkills', type: 'long', label: 'What can you build?', short: 'Technical skills', hint: 'Languages, frameworks, automation, anything relevant.', required: true },
     { key: 'techTools', type: 'long', label: 'Which tools do you use day to day?', short: 'Tools', required: false },
-    { key: 'techReference', type: 'url', label: 'Got something we can look at?', short: 'Reference', hint: 'GitHub, a live project or a demo.', placeholder: 'https://', required: false },
     { key: 'techRemarks', type: 'long', label: 'Anything else you want us to know?', short: 'Remarks', required: false },
   ],
 };
@@ -257,48 +257,41 @@ const swish = (
 };
 
 const sfx = {
-  // a soft low tick for every character typed
   key: () => {
     const c = ac();
     if (!c) return;
     blip(c, { freq: 150 + Math.random() * 30, to: 90, dur: 0.05, peak: 0.035, type: 'triangle' });
     swish(c, { from: 1400, to: 900, dur: 0.02, peak: 0.02, q: 0.8 });
   },
-  // choosing an option
   select: () => {
     const c = ac();
     if (!c) return;
     blip(c, { freq: 200, to: 300, dur: 0.09, peak: 0.04 });
   },
-  // moving to the next step: a low mechanical slide
   slide: () => {
     const c = ac();
     if (!c) return;
     swish(c, { from: 280, to: 800, dur: 0.28, peak: 0.05, q: 1.4 });
     blip(c, { freq: 110, to: 70, dur: 0.22, peak: 0.05, type: 'triangle' });
   },
-  // moving back: the same slide in reverse
   back: () => {
     const c = ac();
     if (!c) return;
     swish(c, { from: 800, to: 280, dur: 0.24, peak: 0.045, q: 1.4 });
     blip(c, { freq: 70, to: 105, dur: 0.2, peak: 0.045, type: 'triangle' });
   },
-  // opening the application
   open: () => {
     const c = ac();
     if (!c) return;
     swish(c, { from: 150, to: 1200, dur: 0.6, peak: 0.06, q: 1.1 });
     blip(c, { freq: 70, to: 45, dur: 0.5, peak: 0.07, type: 'triangle' });
   },
-  // something needs attention
   error: () => {
     const c = ac();
     if (!c) return;
     blip(c, { freq: 95, to: 70, dur: 0.16, peak: 0.06, type: 'triangle' });
     blip(c, { freq: 95, to: 70, dur: 0.16, peak: 0.05, type: 'triangle', delay: 0.1 });
   },
-  // application sent
   success: () => {
     const c = ac();
     if (!c) return;
@@ -309,7 +302,35 @@ const sfx = {
 
 const questionsFor = (f: FormState): Q[] => {
   const c = categoryOf(f.selectedRole);
-  return [...BASE_QUESTIONS, ...(c ? ROLE_QUESTIONS[c] : [])];
+  const qs = [...BASE_QUESTIONS];
+  
+  if (c) {
+    qs.push(...ROLE_QUESTIONS[c]);
+  }
+
+  // Ask for Portfolio and GitHub links AFTER the role has been selected
+  if (f.selectedRole) {
+    qs.push({
+      key: 'portfolioUrl',
+      type: 'url',
+      label: 'Got a portfolio or previous work?',
+      short: 'Portfolio',
+      hint: 'Link to your Google Drive folder, Behance, website, etc.',
+      placeholder: 'https://',
+      required: c === 'Creatives', // Make it required for design/creative roles
+    });
+    qs.push({
+      key: 'githubUrl',
+      type: 'url',
+      label: 'Got a GitHub profile?',
+      short: 'GitHub',
+      hint: 'Link to your GitHub profile. (Optional)',
+      placeholder: 'https://github.com/',
+      required: false,
+    });
+  }
+
+  return qs;
 };
 
 // Index of the first question that still needs an answer, or -1 when all is complete
@@ -353,7 +374,7 @@ const CSS = `
 `;
 
 /* -------------------------------------------------------------------------- */
-/*  Small building blocks                                                      */
+/*  Small building blocks                                                    */
 /* -------------------------------------------------------------------------- */
 
 function Overlay({ children, className }: { children: React.ReactNode; className: string }) {
@@ -441,7 +462,7 @@ function Ticket({ data }: { data: FormState }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  App                                                                        */
+/*  App                                                                      */
 /* -------------------------------------------------------------------------- */
 
 export default function App() {
@@ -462,20 +483,19 @@ export default function App() {
 
   const lock = useRef(false);
 
-
   // Cursor light on the landing hero
   const mx = useMotionValue(-600);
   const my = useMotionValue(-600);
   const spot = useMotionTemplate`radial-gradient(460px circle at ${mx}px ${my}px, rgba(35,48,255,0.09), transparent 70%)`;
 
-  const category = categoryOf(formData.selectedRole);
   const isOther = formData.selectedRole === 'Other';
   const questions = useMemo<Q[]>(
-    () => [...BASE_QUESTIONS, ...(category ? ROLE_QUESTIONS[category] : [])],
-    [category]
+    () => questionsFor(formData),
+    [formData.selectedRole]
   );
+  
   const onReview = idx >= questions.length;
-  const total = questions.length + (category ? 0 : 4) + 1;
+  const total = questions.length + 1;
   const progress = Math.min(1, idx / (total - 1));
   const hasChanges = !existingId || original === null || snapshot(formData) !== original;
 
@@ -513,11 +533,15 @@ export default function App() {
       setExistingId(data.id);
       const rawRole: string = data.selected_role || '';
       const savedOther = rawRole.startsWith('Other: ');
+      
+      // Load links into new schema fields smoothly from older submissions
       const loaded: FormState = {
         email: data.email || '',
         fullName: data.full_name || '',
         classYear: data.class_year || '',
         phone: data.phone || '',
+        portfolioUrl: data.portfolio_url || data.cr_portfolio || '',
+        githubUrl: data.github_url || data.tech_reference || '',
         selectedRole: savedOther ? 'Other' : rawRole,
         otherRole: savedOther ? rawRole.slice(7) : '',
         crSoftware: data.cr_software || '',
@@ -672,18 +696,22 @@ export default function App() {
   const submitForm = async () => {
     if (!hasChanges) return;
     setSubmitting(true);
+
     const payload = {
       email: formData.email,
       full_name: formData.fullName,
       class_year: formData.classYear,
       phone: formData.phone,
+      portfolio_url: formData.portfolioUrl,
+      github_url: formData.githubUrl,
+      cr_portfolio: formData.portfolioUrl || formData.crPortfolio, 
+      tech_reference: formData.githubUrl || formData.techReference, 
       selected_role:
         formData.selectedRole === 'Other' && formData.otherRole.trim()
           ? `Other: ${formData.otherRole.trim()}`
           : formData.selectedRole,
       cr_software: formData.crSoftware,
       cr_teamwork: formData.crTeamwork,
-      cr_portfolio: formData.crPortfolio,
       cr_remarks: formData.crRemarks,
       sm_familiarity: formData.smFamiliarity,
       sm_platforms: formData.smPlatforms,
@@ -696,7 +724,6 @@ export default function App() {
       dm_remarks: formData.dmRemarks,
       tech_skills: formData.techSkills,
       tech_tools: formData.techTools,
-      tech_reference: formData.techReference,
       tech_remarks: formData.techRemarks,
     };
 
@@ -930,7 +957,7 @@ export default function App() {
                   <span className="text-sm font-medium opacity-60">
                     {onReview ? 'Last look' : `${idx + 1} of ${total}`}
                   </span>
-                        <Link to="/admin" aria-label="Admin" className="p-2 opacity-40 hover:opacity-100 transition-opacity">
+                  <Link to="/admin" aria-label="Admin" className="p-2 opacity-40 hover:opacity-100 transition-opacity">
                     <Lock className="w-5 h-5" strokeWidth={1.75} />
                   </Link>
                 </div>
